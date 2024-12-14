@@ -1,0 +1,42 @@
+services:
+  docker:
+    image: docker:27.3-dind
+    privileged: true
+    healthcheck:
+      test: ["CMD-SHELL", "docker", "info"]
+      interval: 1s
+      start_period: 2s
+    volumes:
+      - dind-ca:/certs/ca
+      - dind-client:/certs/client
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    networks:
+      - docker-network
+
+  client:
+    image: docker:27.3-cli
+    volumes:
+      - dind-client:/certs/client:ro
+    entrypoint:
+      - docker
+      - version
+    depends_on:
+      docker:
+        condition: service_healthy
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_VERIFY: "1"
+      DOCKER_CERT_PATH: /certs/client
+    networks:
+      - docker-network
+
+volumes:
+  dind-ca:
+  dind-client:
+
+networks:
+  docker-network:
+    name: docker-network
+    driver: bridge
