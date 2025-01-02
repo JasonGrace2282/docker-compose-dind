@@ -1,0 +1,16 @@
+# This is what is deployed on the swarm on initialization
+
+
+services:
+  nginx:
+    image: nginx:latest
+    networks:
+      - traefik-public
+    deploy:
+      labels:
+        - traefik.http.routers.my-nginx-site.rule=Host(`nginx.example.com`)
+        - traefik.http.services.my-nginx-site.loadbalancer.server.port=80
+
+networks:
+  traefik-public:
+    external: true

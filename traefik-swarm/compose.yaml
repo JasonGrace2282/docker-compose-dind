@@ -1,0 +1,68 @@
+services:
+  docker:
+    image: docker:27.3-dind
+    privileged: true
+    healthcheck:
+      test: ["CMD-SHELL", "docker", "info"]
+      interval: 1s
+      start_period: 2s
+    volumes:
+      - dind-ca:/certs/ca
+      - dind-client:/certs/client
+      - dind-data:/var/lib/docker
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    networks:
+      - docker-network
+
+  traefik:
+    image: traefik:v3.2
+    volumes:
+      - dind-ca:/certs/ca
+      - dind-client:/certs/client:ro
+    command:
+      - --providers.swarm
+      - --providers.swarm.network=traefik-public
+      # TLS
+      - --providers.swarm.endpoint=tcp://docker:2376
+      - --providers.swarm.tls.ca=/certs/ca/cert.pem
+      - --providers.swarm.tls.cert=/certs/client/cert.pem
+      - --providers.swarm.tls.key=/certs/client/key.pem
+      - --log.level=debug
+    depends_on:
+      start-docker-swarm:
+        condition: service_completed_successfully
+    networks:
+      - docker-network
+
+  start-docker-swarm:
+    image: docker:27.3-cli
+    entrypoint: "/app/start-swarm.sh"
+    volumes:
+      - .:/app
+      - dind-ca:/certs/ca
+      - dind-client:/certs/client
+    depends_on:
+      docker:
+        condition: service_healthy
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_VERIFY: "1"
+      DOCKER_CERT_PATH: /certs/client
+    networks:
+      - docker-network
+
+
+volumes:
+  dind-ca:
+    name: docker-ca
+  dind-client:
+    name: docker-client
+  dind-data:
+    name: dind-data
+
+networks:
+  docker-network:
+    name: docker-network
+    driver: bridge
