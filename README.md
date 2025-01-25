@@ -14,4 +14,5 @@ with Docker Compose.
 ## Table of Contents
 
 - `basic-example/`: a basic example of a client service needing the docker-in-docker service.
-- `traefik-swarm/`: an example of how to use traefik to route requests into swarm services running inside docker-in-docker.
+- `nginx-example/`: an example of running an nginx server within docker-in-docker
+- `traefik-swarm/`: an example of how to use traefik to route requests into swarm services running inside docker-in-docker. (Not working yet)
